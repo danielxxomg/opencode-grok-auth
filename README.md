@@ -260,40 +260,6 @@ Test-Path C:\Workspace\01_Coding\Active_Projects\Projetos\opencode-xai-grok-oaut
 - OpenCode providers:
   https://opencode.ai/docs/providers/
 
-## Development
-
-```powershell
-cd C:\Workspace\01_Coding\Active_Projects\Projetos\opencode-xai-grok-oauth
-bun install
-bun run typecheck
-bun run test
-bun run build
-```
-
-## Publishing
-
-The npm package is configured as:
-
-```text
-opencode-grok-auth
-```
-
-Before publishing:
-
-```powershell
-bun run typecheck
-bun run test
-bun run build
-npm pack --dry-run
-```
-
-Publish the first public release:
-
-```powershell
-npm login
-npm publish --access public
-```
-
 ## Security Notes
 
 - Do not commit OpenCode auth files.
