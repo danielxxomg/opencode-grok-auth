@@ -7,77 +7,50 @@ This is the xAI equivalent of the Antigravity OAuth plugin pattern: OpenCode
 gets a provider, model definitions, an OAuth login method, automatic token
 refresh, and a fetch layer that sends requests to `https://api.x.ai/v1`.
 
+> **Fork maintained by [@danielxxomg](https://github.com/danielxxomg)**
+> Includes `grok-4.5` model config with real pricing, image support, and reasoning variants.
+
 ## What You Get
 
 - OAuth login for `xai-oauth` inside `opencode auth login`.
 - Local loopback callback on `http://127.0.0.1:56121/callback`, with random-port fallback if the port is busy.
 - xAI OIDC discovery from `https://auth.x.ai/.well-known/openid-configuration`.
-- Hermes-compatible authorize URL at `https://auth.x.ai/oauth2/authorize` with `referrer=hermes-agent`.
 - Endpoint pinning so discovered OAuth URLs must be HTTPS on `x.ai` or `*.x.ai`.
-- Hermes-compatible token exchange, including `code_verifier` plus the original `code_challenge`.
+- Token exchange with `code_verifier` plus the original `code_challenge`.
 - Automatic refresh token handling through OpenCode's auth store.
-- Provider and model definitions for current Grok OAuth models.
+- Provider and model definitions for Grok OAuth models.
 - Safety guard that refuses to send OAuth bearer tokens to anything except `https://api.x.ai`.
 
-## Installation
+## Installation (from this fork)
 
-This repo is currently installed locally. Once it is published to npm, the setup
-can be simplified to the same `"plugin": ["opencode-grok-auth@latest"]`
-style used by `opencode-antigravity-auth`.
+### 1. Clone and build
 
-Package name:
-
-```text
-opencode-grok-auth
-```
-
-Repository:
-
-```text
-https://github.com/ysnock404/opencode-grok-auth
-```
-
-### Current Local Install
-
-Build the plugin:
-
-```powershell
-cd C:\Workspace\01_Coding\Active_Projects\Projetos\opencode-xai-grok-oauth
+```bash
+git clone https://github.com/danielxxomg/opencode-grok-auth.git
+cd opencode-grok-auth
 bun install
 bun run build
 ```
 
-The global OpenCode plugin wrapper has already been created here:
+### 2. Move to OpenCode providers directory
 
-```text
-C:\Users\ysnock\.config\opencode\plugins\xai-grok-oauth.js
+```bash
+mv opencode-grok-auth ~/.config/opencode/providers/opencode-grok-auth
 ```
 
-It contains:
+### 3. Create the plugin wrapper
 
-```js
-export { default } from "file:///C:/Workspace/01_Coding/Active_Projects/Projetos/opencode-xai-grok-oauth/dist/index.js";
+```bash
+cat > ~/.config/opencode/plugins/xai-grok-oauth.js << 'EOF'
+export { default } from "file:///home/USER/.config/opencode/providers/opencode-grok-auth/dist/index.js";
+EOF
 ```
 
-OpenCode loads global plugins from `~/.config/opencode/plugins/`, so this works
-for any project where you run OpenCode.
+Replace `USER` with your username, or use the absolute path to your home directory.
 
-### OpenCode Provider Config
+### 4. Add the provider config to `~/.config/opencode/opencode.json`
 
-The global config has also been updated:
-
-```text
-C:\Users\ysnock\.config\opencode\opencode.json
-```
-
-It now includes `provider.xai-oauth` with these model IDs:
-
-- `grok-4.3`
-- `grok-4.20-0309-reasoning`
-- `grok-4.20-0309-non-reasoning`
-- `grok-4.20-multi-agent-0309`
-
-Equivalent config block:
+Add this block inside the `provider` object:
 
 ```json
 {
@@ -89,17 +62,37 @@ Equivalent config block:
         "baseURL": "https://api.x.ai/v1"
       },
       "models": {
-        "grok-4.3": {
-          "name": "Grok 4.3"
-        },
-        "grok-4.20-0309-reasoning": {
-          "name": "Grok 4.20 Reasoning"
-        },
-        "grok-4.20-0309-non-reasoning": {
-          "name": "Grok 4.20 Non-Reasoning"
-        },
-        "grok-4.20-multi-agent-0309": {
-          "name": "Grok 4.20 Multi-Agent"
+        "grok-4.5": {
+          "attachment": true,
+          "cost": {
+            "cache_read": 0.5,
+            "input": 2,
+            "output": 6
+          },
+          "id": "grok-4.5",
+          "limit": {
+            "context": 500000,
+            "output": 32768
+          },
+          "modalities": {
+            "input": ["text", "image"],
+            "output": ["text"]
+          },
+          "name": "Grok 4.5",
+          "reasoning": true,
+          "reasoning_options": [
+            {
+              "type": "effort",
+              "values": ["high", "medium", "low"]
+            }
+          ],
+          "temperature": true,
+          "tool_call": true,
+          "variants": {
+            "high": {},
+            "medium": {},
+            "low": {}
+          }
         }
       }
     }
@@ -107,88 +100,77 @@ Equivalent config block:
 }
 ```
 
-## Step-by-Step Instructions
+### 5. Authenticate
 
-1. Build the plugin:
-
-```powershell
-cd C:\Workspace\01_Coding\Active_Projects\Projetos\opencode-xai-grok-oauth
-bun install
-bun run build
-```
-
-2. Confirm the global wrapper exists:
-
-```powershell
-Get-Content $HOME\.config\opencode\plugins\xai-grok-oauth.js
-```
-
-3. Start OAuth login:
-
-```powershell
+```bash
 opencode auth login
+# Select: xAI Grok OAuth
+# Complete the browser login
 ```
 
-4. Pick:
+### 6. Use the model
 
-```text
-xAI Grok OAuth
-```
+Select `xai-oauth/grok-4.5` in OpenCode.
 
-5. Finish the xAI login in the browser.
+## Grok 4.5 Model Reference
 
-6. Select a model in OpenCode:
+| Property | Value |
+|---|---|
+| **Context window** | 500,000 tokens |
+| **Input modalities** | text, image (jpg/png, max 20MB) |
+| **Output modalities** | text |
+| **Reasoning** | Yes (effort: high / medium / low) |
+| **Function calling** | Yes |
+| **Structured outputs** | Yes |
+| **Rate limits** | 150 req/s, 50M tokens/min |
 
-```text
-xai-oauth/grok-4.3
-```
+### Pricing (official xAI rates)
 
-## Models
+| Token type | Price per 1M tokens |
+|---|---|
+| Input | $2.00 |
+| Cached input | $0.50 |
+| Output | $6.00 |
 
-### Model Reference
+Source: [docs.x.ai/pricing](https://docs.x.ai/docs/pricing)
 
-| Model ID                       | Use                                       |
-| ------------------------------ | ----------------------------------------- |
-| `grok-4.3`                     | Default general-purpose Grok OAuth model. |
-| `grok-4.20-0309-reasoning`     | Reasoning-heavy tasks.                    |
-| `grok-4.20-0309-non-reasoning` | Faster non-reasoning variant.             |
-| `grok-4.20-multi-agent-0309`   | Multi-agent oriented Grok variant.        |
+### Other available models
 
-The fallback list mirrors the Hermes Agent xAI OAuth model list as of this
-implementation. If xAI renames or retires models, update `src/constants.ts` and
-`~/.config/opencode/opencode.json`.
+The plugin's default config also registers these models (from `src/constants.ts`):
+
+| Model ID | Description |
+|---|---|
+| `grok-4.3` | General-purpose (1M context) |
+| `grok-4.20-0309-reasoning` | Reasoning-heavy (1M context) |
+| `grok-4.20-0309-non-reasoning` | Faster non-reasoning variant |
+| `grok-4.20-multi-agent-0309` | Multi-agent oriented |
+
+To add them, extend the `models` object in your config with the same structure.
 
 ## Configuration
 
 ### Plugin Loading
 
-Current local install:
+The plugin loads from:
 
 ```text
 ~/.config/opencode/plugins/xai-grok-oauth.js
 ```
 
-Future npm install:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugin": ["opencode-grok-auth@latest"]
-}
-```
-
-Important: the OpenCode key is `plugin`, not `plugins`.
+OpenCode loads global plugins from `~/.config/opencode/plugins/`, so this works
+for any project where you run OpenCode.
 
 ### Provider Behavior
 
 The plugin auto-injects a default provider at runtime if `provider.xai-oauth`
 is missing. The explicit config in `opencode.json` is still useful because it
-makes the model list visible and matches the Antigravity setup style.
+makes the model list visible and allows you to set pricing, context limits,
+and reasoning variants.
 
 Disable auto-injection if you want to manage the provider block manually:
 
-```powershell
-$env:OPENCODE_XAI_OAUTH_AUTO_CONFIG = "false"
+```bash
+export OPENCODE_XAI_OAUTH_AUTO_CONFIG=false
 ```
 
 ### Browser Behavior
@@ -197,8 +179,8 @@ By default, the plugin tries to open the xAI authorization URL in your browser.
 
 Disable automatic browser launch:
 
-```powershell
-$env:OPENCODE_XAI_OAUTH_NO_BROWSER = "1"
+```bash
+export OPENCODE_XAI_OAUTH_NO_BROWSER=1
 opencode auth login
 ```
 
@@ -226,13 +208,13 @@ ssh -L 56121:127.0.0.1:56121 user@host
 Check that `provider.xai-oauth.models` exists in:
 
 ```text
-C:\Users\ysnock\.config\opencode\opencode.json
+~/.config/opencode/opencode.json
 ```
 
 Then restart OpenCode and select:
 
 ```text
-xai-oauth/grok-4.3
+xai-oauth/grok-4.5
 ```
 
 ### API Key Missing
@@ -240,25 +222,39 @@ xai-oauth/grok-4.3
 This plugin does not use an API key. The loader returns an OAuth-backed fetch
 handler and injects:
 
-```http
+```
 Authorization: Bearer <xai access token>
 ```
 
 If OpenCode still asks for an API key, the plugin did not load. Check:
 
-```powershell
-Get-Content $HOME\.config\opencode\plugins\xai-grok-oauth.js
-Test-Path C:\Workspace\01_Coding\Active_Projects\Projetos\opencode-xai-grok-oauth\dist\index.js
+```bash
+cat ~/.config/opencode/plugins/xai-grok-oauth.js
+ls ~/.config/opencode/providers/opencode-grok-auth/dist/index.js
 ```
+
+### Token Refresh
+
+The OAuth access token expires after ~6 hours. The plugin refreshes it
+automatically using the stored refresh token. If refresh fails, re-run:
+
+```bash
+opencode auth login
+```
+
+### Shared Auth with Grok CLI
+
+The plugin uses the same OAuth client ID as the official `grok` CLI
+(`b1a00492-073a-47ea-816f-4c329264a828`). If you already authenticated with
+`grok`, your token may be reusable. The CLI stores auth in `~/.grok/auth.json`.
 
 ## Documentation
 
-- xAI Grok OAuth guide from Hermes Agent:
-  https://hermes-agent.nousresearch.com/docs/guides/xai-grok-oauth
-- OpenCode plugins:
-  https://opencode.ai/docs/plugins/
-- OpenCode providers:
-  https://opencode.ai/docs/providers/
+- xAI API docs: https://docs.x.ai/docs
+- xAI models: https://docs.x.ai/docs/models
+- xAI pricing: https://docs.x.ai/docs/pricing
+- OpenCode plugins: https://opencode.ai/docs/plugins/
+- OpenCode providers: https://opencode.ai/docs/providers/
 
 ## Security Notes
 
@@ -275,6 +271,8 @@ Implementation pattern inspired by:
 
 - `opencode-antigravity-auth` by Noe Fabris
 - Hermes Agent's xAI Grok OAuth implementation by Nous Research
+
+Original plugin by [@ysnock404](https://github.com/ysnock404).
 
 ## License
 
